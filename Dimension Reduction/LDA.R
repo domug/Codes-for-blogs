@@ -40,9 +40,39 @@ set.seed(7)
 ## train test split by 80% : 20%
 train_size = floor(0.8 * nrow(data_full_new))
 
-## set the seed to make your partition reproducible
+## Define train data
 train_index = sample(seq_len(nrow(data_full_new)), size = train_size)
+variables = data.frame(scale(data_full_new[, 2:13]))
+train_variables = variables[train_index, ]
+train_labels = data_full_new[train_index, 14]
+train = data.frame(train_variables, "COMPANY"=train_labels)
 
-indep_variables = data.frame(scale(data_full_new[, 2:13]))
+head(train)
+dim(train)
+
+## Define test data
+test_variables = variables[-train_index, ]
+test_labels = data_full_new[-train_index, 14]
+test = data.frame(test_variables, "COMPANY"=test_labels)
+dim(test)
+
+## Perform LDA
+library(MASS)
+model = lda(COMPANY ~ ., data=train)
+model
+
+## Visualize the result
+company = factor(train[, "COMPANY"])
+train_pred = predict(model)
+ggplot(data.frame(train_pred$x), aes(x=LD1, y=LD2, col=company)) + 
+  geom_point() + labs(title="Linear Discriminant Analysis")
+
+## Error rate on train dataset
+filter = (train_pred$class != train[, "COMPANY"])
+sum(filter)/nrow(train)
 
 
+## Error rate on test dataset
+test_pred = predict(model, test)
+filter = (test_pred$class != test[, "COMPANY"])
+sum(filter)/nrow(test)
